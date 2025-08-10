@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..24" />
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="basic.css">
+  <script type="module" src="main.js"></script>
+  <title>instagram style</title>
+</head>
+<body>
+<div class="container">
+  <div class="top">
+    <div>
+      <span class="material-symbols-rounded">keyboard_backspace</span>
+    </div>
+    <div class="user-info">
+      <div class="user-thumb">
+        <img src="https://randomuser.me/api/portraits/med/men/75.jpg" alt="user">
+      </div>
+      <div class="user-text">
+        <span class="user-name">user name</span>
+        <span class="user-id">user id</span>
+      </div>
+    </div>
+    <div>
+      <span class="material-symbols-rounded">call</span>
+      <span class="material-symbols-rounded">videocam</span>
+    </div>
+  </div>
+  <div class="content">
+    <div class="chat-bubble left">
+      <div class="user-thumb">
+        <img src="https://randomuser.me/api/portraits/med/men/75.jpg" alt="user">
+      </div>
+      <ul>
+        <li>dd</li>
+      </ul>
+    </div>
+    <div class="chat-bubble right">
+      <ul>
+      </ul>
+    </div>
+  </div>
+  <div class="bottom">
+    <div>
+      <span class="material-symbols-rounded">photo_camera</span>
+    </div>
+    <div>
+      <textarea oninput="autoHeight(this)" class="input-box" rows="1" spellcheck="false"></textarea>
+    </div>
+    <div>
+      <span class="material-symbols-rounded">mic</span>
+      <span class="material-symbols-rounded">image</span>
+      <span class="material-symbols-rounded">add_reaction</span>
+      <span id="btn-send" class="material-symbols-rounded">send</span>
+    </div>
+  </div>
+</div>
+</body>
+<script>
+  function autoHeight(input){
+    input.style.height = 'auto';
+    input.style.height = `${input.scrollHeight}px`;
+    if(input.scrollHeight > 173){
+      input.style.height = '174px';
+    }
+  }
+</script>
+</html>
