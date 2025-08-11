@@ -10,8 +10,8 @@ public class ChatController {
     public String index(Model model) {
         return "index";
     }
-    @GetMapping(value = "/chat.do")
+    @GetMapping(value = "/main.do")
     public String chat(Model model) {
-        return "chat";
+        return "main";
     }
 }

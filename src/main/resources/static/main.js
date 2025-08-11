@@ -7,6 +7,16 @@ const content = document.querySelector('.content');
 
 // 전송버튼
 sendBtn.addEventListener("click", ()=>{
+    let msg = {
+        code : '3',
+        sender: name,
+        receiver: '',
+        content: message.value.replaceAll(/(\n|\r\n)/g, "<br>"),
+        regdate: new Date().toLocaleString()
+    };
+    ws.send(JSON.stringify(msg));
+    print(name, msg.content, 'me', 'msg', msg.regdate);
+
     if(content.lastElementChild.classList.contains('right')){
         const userMessage = content.lastElementChild.querySelector('.user-message');
         if(message.value.trim()){
@@ -75,6 +85,8 @@ function connect(name){
             print('', `${name}님이 입장하셨습니다.`, 'other', 'state', message.regdate)
         } else if (message.code === '2'){
             print('', `${name}님이 퇴장하셨습니다.`, 'other', 'state', message.regdate)
+        } else if (message.code === '3'){
+            print(message.sender, message.content, 'other', 'msg', message.regdate)
         }
     }
 }

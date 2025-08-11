@@ -17,12 +17,11 @@ connectBtn.addEventListener('click', e=>{
     }
 
     let userName = document.querySelector('#user-name').value;
-    if(e.target.data('name') !== null && e.target.data('name') !== ''){
-        userName = e.target.data('name');
+    if(userName !== null && userName !== ''){
+        let child = window.open('/socket/main.do');
+        child.addEventListener('load', e=>{
+            child.connect(userName);
+        });
     }
-    let child = window.open('/socket/chat.do');
-    child.addEventListener('load', e=>{
-        child.connect(userName);
-    });
     userName.prop('readOnly', true);
 });

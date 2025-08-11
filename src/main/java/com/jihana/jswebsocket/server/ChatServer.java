@@ -19,6 +19,7 @@ public class ChatServer {
     public void handleOpen(Session session) {
         sessionList.add(session);
         checkSessionList();
+        clearSessionList();
     }
     @OnMessage
     public void handleMessage(String message, Session session) {
@@ -27,7 +28,7 @@ public class ChatServer {
         Message msg = gson.fromJson(message, Message.class);
 
         // 모든 접속자 중에서 방금 메시지를 보낸 세션 제외 나머지 검색
-        if(msg.getCode().equals("1")){
+        if(msg.getCode().equals("1")){ //상대방 입장
             for(Session s : sessionList){
                 if(s != session){
                     try {
@@ -44,6 +45,16 @@ public class ChatServer {
                     s.getBasicRemote().sendText(message);
                 } catch (Exception e) {
                     e.printStackTrace();
+                }
+            }
+        } else if(msg.getCode().equals("3")){ //보낸 사람 빼고 나머지에게 전달
+            for(Session s : sessionList){
+                if(s != session){
+                    try {
+                        s.getBasicRemote().sendText(message);
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
                 }
             }
         }
