@@ -148,6 +148,9 @@ span.material-symbols-rounded {
                         &:last-child {
                             border-radius: 1.42rem 0.14rem 1.42rem 1.42rem;
                         }
+                        span {
+                            color: var(--black);
+                        }
                     }
                 }
             }
@@ -213,6 +216,7 @@ span.material-symbols-rounded {
             border: none;
             border-radius: 0.3rem;
             cursor: pointer;
+            outline: none;
         }
     }
 }

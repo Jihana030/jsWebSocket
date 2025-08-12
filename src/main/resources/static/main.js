@@ -1,72 +1,33 @@
-let socket = new WebSocket("ws://localhost:8003/socket/chatserver.do");
+// let socket = new WebSocket("ws://localhost:8003");
 const sendBtn = document.querySelector('#btn-send');
 const message = document.querySelector('.input-box');
 const content = document.querySelector('.content');
 
 // chat bubble들의 높이의 총값이 content 높이보다 크면 스크롤 맨 밑에
 
-// 전송버튼
-sendBtn.addEventListener("click", ()=>{
-    let msg = {
-        code : '3',
-        sender: name,
-        receiver: '',
-        content: message.value.replaceAll(/(\n|\r\n)/g, "<br>"),
-        regdate: new Date().toLocaleString()
-    };
-    ws.send(JSON.stringify(msg));
-    print(name, msg.content, 'me', 'msg', msg.regdate);
-
-    if(content.lastElementChild.classList.contains('right')){
-        const userMessage = content.lastElementChild.querySelector('.user-message');
-        if(message.value.trim()){
-            const text = message.value.replaceAll(/(\n|\r\n)/g, "<br>");
-            socket.send(text);
-            userMessage.innerHTML += `<div>${text}</div>`;
-            message.value = "";
-            message.style.height = `auto`;
-            scrollToBottom(content);
-        } else {
-            socket.send('no value');
-        }
-    } else {
-        const chatMe = document.createElement('div.chat-bubble.right')
-        if(message.value.trim()){
-            const text = message.value.replaceAll(/(\n|\r\n)/g, "<br>");
-            socket.send(text);
-            chatMe.innerHTML += `<div class="user-message"><div>${text}</div></div>`;
-            message.value = "";
-            message.style.height = `auto`;
-            scrollToBottom(content);
-        } else {
-            socket.send('no value');
-        }
-    }
-
-});
-
-// enter event
-message.addEventListener("keydown", (e)=>{
-    if(e.key === 'Enter'){
-        if(!e.shiftKey){
-            e.preventDefault();
-            sendBtn.click();
-        }
-    }
-});
-
 //스크롤 아래 고정
 function scrollToBottom(content){
     content.scrollTop = content.scrollHeight;
 }
 
-
 let name;
 let ws;
-const url = 'ws://localhost:8003/socket/chatserver.do';
+const url = 'ws://localhost:8080/chatserver.do';
+
+// userName 받기
+document.addEventListener('DOMContentLoaded', function(){
+    const urlParams = new URLSearchParams(window.location.search);
+    const userName = urlParams.get('username');
+    if(userName){
+        console.log('userName : ' + userName);
+        connectUser(userName);
+    } else {
+        console.log('no name');
+    }
+})
 
 // 입장
-function connect(name){
+function connectUser(name){
     ws = new WebSocket(url);
     ws.onopen = (e) => {
         let message = {
@@ -92,6 +53,9 @@ function connect(name){
 }
 
 // 퇴장 유저 서버에 전송
+window.onbeforeunload = () => {
+    disconnect();
+}
 function disconnect(){
     let message = {
         code: '2',
@@ -102,6 +66,29 @@ function disconnect(){
     };
     ws.send(JSON.stringify(message));
 }
+
+// 전송버튼
+sendBtn.addEventListener("click", ()=>{
+    let msg = {
+        code : '3',
+        sender: name,
+        receiver: '',
+        content: message.value.replaceAll(/(\n|\r\n)/g, "<br>"),
+        regdate: new Date().toLocaleString()
+    };
+    ws.send(JSON.stringify(msg));
+    print(name, msg.content, 'me', 'msg', msg.regdate);
+    message.value = '';
+});
+// enter event
+message.addEventListener("keydown", (e)=>{
+    if(e.key === 'Enter'){
+        if(!e.shiftKey){
+            e.preventDefault();
+            sendBtn.click();
+        }
+    }
+});
 
 // 대화창 내용
 function print(name, msg, side, state, time){
@@ -114,32 +101,48 @@ function print(name, msg, side, state, time){
     let temp = `
         <div class="user-message">
             <div>
-                ${msg.value.replaceAll(/(\n|\r\n)/g, "<br>")}
+                ${msg.replaceAll(/(\n|\r\n)/g, "<br>")}
                 <span>${time}</span>
             </div>
         </div>
     `;
     let temp2 = `
         <div>
-            ${msg.value.replaceAll(/(\n|\r\n)/g, "<br>")}
+            ${msg.replaceAll(/(\n|\r\n)/g, "<br>")}
             <span>${time}</span>
         </div>
     `
     if(side === 'me'){
-        if(content.lastElementChild.classList.contains('right')){
+        if(content.children.length === 0){
+            const chatMe = document.createElement('div');
+            chatMe.className = 'chat-bubble right';
+            chatMe.innerHTML = temp;
+            content.appendChild(chatMe);
+        } else if(content.lastElementChild.classList.contains('right')){
             const userMessage = content.lastElementChild.querySelector('.user-message');
             userMessage.innerHTML += temp2;
         } else {
-            const chatMe = document.createElement('div.chat-bubble.right')
+            const chatMe = document.createElement('div')
+            chatMe.className = 'chat-bubble right';
             chatMe.innerHTML = temp;
+            content.appendChild(chatMe);
         }
     } else {
-        if(content.lastElementChild.classList.contains('left')){
+        if(content.children.length === 0){
+            const chatMe = document.createElement('div');
+            chatMe.className = 'chat-bubble left';
+            chatMe.innerHTML = user;
+            chatMe.innerHTML += temp;
+            content.appendChild(chatMe);
+        } else if(content.lastElementChild.classList.contains('left')){
             const userMessage = content.lastElementChild.querySelector('.user-message');
             userMessage.innerHTML += temp2;
         } else {
-            const chatMe = document.createElement('div.chat-bubble.left')
-            chatMe.innerHTML = temp;
+            const chatMe = document.createElement('div')
+            chatMe.className = 'chat-bubble left';
+            chatMe.innerHTML += user;
+            chatMe.innerHTML += temp;
+            content.appendChild(chatMe);
         }
     }
     scrollToBottom(content);
