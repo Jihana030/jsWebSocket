@@ -17,10 +17,9 @@ const url = 'ws://localhost:8080/chatserver.do';
 // userName 받기
 document.addEventListener('DOMContentLoaded', function(){
     const urlParams = new URLSearchParams(window.location.search);
-    const userName = urlParams.get('username');
-    if(userName){
-        console.log('userName : ' + userName);
-        connectUser(userName);
+    name = urlParams.get('username');
+    if(name){
+        connectUser(name);
     } else {
         console.log('no name');
     }
@@ -38,14 +37,17 @@ function connectUser(name){
             regdate: new Date().toLocaleString()
         };
         ws.send(JSON.stringify(message));
-        print('', `${name}님이 입장하셨습니다.`, 'me', 'state', message.regdate);
+        print('', `${message.sender}님이 입장하셨습니다.`, 'me', 'state', message.regdate);
     }
     ws.onmessage = (e) => {
         let message = JSON.parse(e.data);
+        if(message.sender === name){
+            return;
+        }
         if(message.code === '1'){
-            print('', `${name}님이 입장하셨습니다.`, 'other', 'state', message.regdate)
+            print('', `${message.sender}님이 입장하셨습니다.`, 'other', 'state', message.regdate)
         } else if (message.code === '2'){
-            print('', `${name}님이 퇴장하셨습니다.`, 'other', 'state', message.regdate)
+            print('', `${message.sender}님이 퇴장하셨습니다.`, 'other', 'state', message.regdate)
         } else if (message.code === '3'){
             print(message.sender, message.content, 'other', 'msg', message.regdate)
         }
@@ -54,9 +56,9 @@ function connectUser(name){
 
 // 퇴장 유저 서버에 전송
 window.onbeforeunload = () => {
-    disconnect();
+    disconnect(name);
 }
-function disconnect(){
+function disconnect(name){
     let message = {
         code: '2',
         sender: name,
@@ -95,7 +97,7 @@ function print(name, msg, side, state, time){
     let user = `
         <div class="user-thumb">
             <img src="https://randomuser.me/api/portraits/med/men/75.jpg" alt="user">
-            <span>${name}</span>
+            <span class="user-name">${name}</span>
         </div>
     `;
     let temp = `
@@ -136,7 +138,16 @@ function print(name, msg, side, state, time){
             content.appendChild(chatMe);
         } else if(content.lastElementChild.classList.contains('left')){
             const userMessage = content.lastElementChild.querySelector('.user-message');
-            userMessage.innerHTML += temp2;
+            const userThumb = content.lastElementChild.querySelector('.user-thumb');
+            if(name !== userThumb.querySelector('.user-name').innerText){
+                const chatMe = document.createElement('div')
+                chatMe.className = 'chat-bubble left';
+                chatMe.innerHTML += user;
+                chatMe.innerHTML += temp;
+                content.appendChild(chatMe);
+            } else {
+                userMessage.innerHTML += temp2;
+            }
         } else {
             const chatMe = document.createElement('div')
             chatMe.className = 'chat-bubble left';

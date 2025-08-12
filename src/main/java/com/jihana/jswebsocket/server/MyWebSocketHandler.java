@@ -5,10 +5,7 @@ import com.jihana.jswebsocket.domain.Message;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.WebSocketHandler;
-import org.springframework.web.socket.WebSocketMessage;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.*;
 
 import java.io.Reader;
 import java.util.ArrayList;
@@ -54,6 +51,19 @@ public class MyWebSocketHandler implements WebSocketHandler {
         Gson gson = new Gson(); //json해석
         String payload = (String) message.getPayload();
         Message msg = gson.fromJson(payload, Message.class);
+
+        Message chatMessage = new Message();
+        chatMessage.setCode(msg.getCode());
+        chatMessage.setContent(msg.getContent());
+        chatMessage.setSender(msg.getSender());
+
+        String jsonMessage = new Gson().toJson(chatMessage);
+
+        for (WebSocketSession s : sessions) {
+            if(s != session){ //자신 제외
+                s.sendMessage(new TextMessage(jsonMessage));
+            }
+        }
 
         // 모든 접속자 중에서 방금 메시지를 보낸 세션 제외 나머지 검색
         if(msg.getCode().equals("1")){ //상대방 입장
