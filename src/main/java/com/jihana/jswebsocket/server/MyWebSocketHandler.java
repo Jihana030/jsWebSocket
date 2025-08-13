@@ -8,13 +8,18 @@ import jakarta.websocket.Session;
 import org.springframework.web.socket.*;
 
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 public class MyWebSocketHandler implements WebSocketHandler {
     private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
+
+    private final Map<WebSocketSession, String> sessionNames = new ConcurrentHashMap<>();
+
+    private final Map<WebSocketSession, Message> userMessages = new ConcurrentHashMap<>();
+
 
 //    접속자 확인
     private void checkSessionList(){
@@ -41,59 +46,76 @@ public class MyWebSocketHandler implements WebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
         checkSessionList();
-        System.out.println(sessions);
+
+//        참가자 명단
+        List<String> currentParticipants = new ArrayList<>();
+        for(WebSocketSession s : sessions){
+            String userName = sessionNames.get(s);
+            if(userName != null){
+                currentParticipants.add(userName);
+            }
+        }
+        Message participant = new Message();
+        participant.setCode("0"); //명단업데이트
+        participant.setContent(new Gson().toJson(currentParticipants));
+
+        session.sendMessage(new TextMessage(new Gson().toJson(participant)));
+
+        Message joinMessage = new Message();
+        joinMessage.setCode("1");
+        joinMessage.setSender(session.getId());
+
     }
 
 //    클라이언트로부터 메시지 받았을 때
     @Override
     public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
-        System.out.println(message);
         Gson gson = new Gson(); //json해석
         String payload = (String) message.getPayload();
         Message msg = gson.fromJson(payload, Message.class);
 
-        Message chatMessage = new Message();
-        chatMessage.setCode(msg.getCode());
-        chatMessage.setContent(msg.getContent());
-        chatMessage.setSender(msg.getSender());
+//        입장 시 유저명, 썸네일 숫자
+        if(msg.getCode().equals("1")){
+//            중복검사
+            boolean isDuplicateName = userMessages.values().stream().anyMatch(userMsg -> userMsg.getSender().equals(msg.getSender()));
+            if(isDuplicateName){ // 이름이 중복이라면
+                Message error = new Message();
+                error.setCode("9"); //에러용 코드 9
+                error.setContent("이미 사용 중인 이름입니다.");
+                session.sendMessage(new TextMessage(gson.toJson(error)));
+                return;
+            }
 
-        String jsonMessage = new Gson().toJson(chatMessage);
+            Set<Integer> usedNumbers = userMessages.values().stream().map(Message::getThumb).collect(Collectors.toSet());
+            Random random = new Random();
+            int uniqueNumber;
+            do {
+                uniqueNumber = random.nextInt(100) + 1;
+            } while (usedNumbers.contains(uniqueNumber));
 
-        for (WebSocketSession s : sessions) {
-            if(s != session){ //자신 제외
-                s.sendMessage(new TextMessage(jsonMessage));
+            msg.setThumb(uniqueNumber);
+            sessionNames.put(session, msg.getSender());
+            userMessages.put(session, msg);
+        } else {
+            Message userMessage = userMessages.get(session);
+            if(userMessage != null){
+                msg.setThumb(userMessage.getThumb());
             }
         }
 
-        // 모든 접속자 중에서 방금 메시지를 보낸 세션 제외 나머지 검색
-        if(msg.getCode().equals("1")){ //상대방 입장
-            for(WebSocketSession s : sessions){
-                if(s != session){
-                    try {
-                        s.sendMessage(message);
-                    } catch (Exception e) {
-                        e.getStackTrace();
-                    }
-                }
+        String jsonMessage = gson.toJson(msg);
+        TextMessage textMessage = new TextMessage(jsonMessage);
+
+        for (WebSocketSession s : sessions) {
+            try {
+                s.sendMessage(textMessage);
+            } catch (Exception e) {
+                e.getStackTrace();
             }
-        } else if(msg.getCode().equals("2")){
-            for(WebSocketSession s : sessions){
-                try {
-                    s.sendMessage(message);
-                } catch (Exception e) {
-                    e.getStackTrace();
-                }
-            }
-        } else if(msg.getCode().equals("3")){ //보낸 사람 빼고 나머지에게 전달
-            for(WebSocketSession s : sessions){
-                if(s != session){
-                    try {
-                        s.sendMessage(message);
-                    } catch (Exception e){
-                        e.getStackTrace();
-                    }
-                }
-            }
+        }
+        if(msg.getCode().equals("2")){
+            sessions.remove(session);
+            userMessages.remove(session);
         }
     }
 
@@ -107,6 +129,7 @@ public class MyWebSocketHandler implements WebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
         sessions.remove(session);
+        sessionNames.remove(session);
         clearSessionList();
     }
 

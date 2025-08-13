@@ -13,20 +13,62 @@ function scrollToBottom(content){
 let name;
 let ws;
 const url = 'ws://localhost:8080/chatserver.do';
+let participants = [];
 
 // userName 받기
 document.addEventListener('DOMContentLoaded', function(){
     const urlParams = new URLSearchParams(window.location.search);
     name = urlParams.get('username');
-    if(name){
+    if(name && name !== ''){
         connectUser(name);
     } else {
         console.log('no name');
     }
+
+    // 전송버튼
+    sendBtn.addEventListener("click", ()=>{
+        let msg = {
+            code : '3',
+            sender: name,
+            receiver: '',
+            content: message.value.replaceAll(/(\n|\r\n)/g, "<br>"),
+            regdate: new Date().toLocaleString(),
+        };
+        ws.send(JSON.stringify(msg));
+        message.value = '';
+        message.style.height = 'auto';
+    });
+
+    // enter event
+    message.addEventListener("keydown", (e)=>{
+        if(e.key === 'Enter'){
+            if(!e.shiftKey){
+                e.preventDefault();
+                sendBtn.click();
+            }
+        }
+    });
+
 })
+
+// textarea 높이
+message.addEventListener('input', e=>{
+    autoHeight(message);
+})
+function autoHeight(input){
+    input.style.height = 'auto';
+    if(input.scrollHeight > 173){
+        input.style.height = '174px';
+    } else {
+        input.style.height = `${input.scrollHeight}px`;
+    }
+}
 
 // 입장
 function connectUser(name){
+    if(ws && ws.readyState === WebSocket.OPEN){
+        return;
+    }
     ws = new WebSocket(url);
     ws.onopen = (e) => {
         let message = {
@@ -34,22 +76,30 @@ function connectUser(name){
             sender: name,
             receiver: '',
             content: '',
-            regdate: new Date().toLocaleString()
+            regdate: new Date().toLocaleString(),
+            thumb: 7
         };
         ws.send(JSON.stringify(message));
-        print('', `${message.sender}님이 입장하셨습니다.`, 'me', 'state', message.regdate);
     }
     ws.onmessage = (e) => {
         let message = JSON.parse(e.data);
-        if(message.sender === name){
+        if(message.code === '9'){
+            alert(message.content);
+            window.location.href = '/index.html';
             return;
-        }
-        if(message.code === '1'){
-            print('', `${message.sender}님이 입장하셨습니다.`, 'other', 'state', message.regdate)
+        } else if(message.code === '0'){
+            participants = JSON.parse(message.content);
+            displayList(participants.join());
+        } else if(message.code === '1'){
+            participants.push(message.sender);
+            displayList(participants.join());
+            print('[system]', `${message.sender}님이 입장하셨습니다.`, message.sender === name ? 'me' : 'other', 'state', message.regdate, message.thumb)
         } else if (message.code === '2'){
-            print('', `${message.sender}님이 퇴장하셨습니다.`, 'other', 'state', message.regdate)
+            participants = participants.filter(participant => participant !== message.sender);
+            displayList(participants.join());
+            print('[system]', `${message.sender}님이 퇴장하셨습니다.`, message.sender === name ? 'me' : 'other', 'state', message.regdate, message.thumb)
         } else if (message.code === '3'){
-            print(message.sender, message.content, 'other', 'msg', message.regdate)
+            print(message.sender, message.content, message.sender === name ? 'me' : 'other', 'msg', message.regdate, message.thumb)
         }
     }
 }
@@ -59,44 +109,24 @@ window.onbeforeunload = () => {
     disconnect(name);
 }
 function disconnect(name){
-    let message = {
-        code: '2',
-        sender: name,
-        receiver: '',
-        content: '',
-        regdate: new Date().toLocaleString()
-    };
-    ws.send(JSON.stringify(message));
+    if(ws && ws.readyState === WebSocket.OPEN){
+        let message = {
+            code: '2',
+            sender: name,
+            receiver: '',
+            content: '',
+            regdate: new Date().toLocaleString()
+        };
+        ws.send(JSON.stringify(message));
+    }
 }
 
-// 전송버튼
-sendBtn.addEventListener("click", ()=>{
-    let msg = {
-        code : '3',
-        sender: name,
-        receiver: '',
-        content: message.value.replaceAll(/(\n|\r\n)/g, "<br>"),
-        regdate: new Date().toLocaleString()
-    };
-    ws.send(JSON.stringify(msg));
-    print(name, msg.content, 'me', 'msg', msg.regdate);
-    message.value = '';
-});
-// enter event
-message.addEventListener("keydown", (e)=>{
-    if(e.key === 'Enter'){
-        if(!e.shiftKey){
-            e.preventDefault();
-            sendBtn.click();
-        }
-    }
-});
 
 // 대화창 내용
-function print(name, msg, side, state, time){
+function print(name, msg, side, state, time, thumb){
     let user = `
         <div class="user-thumb">
-            <img src="https://randomuser.me/api/portraits/med/men/75.jpg" alt="user">
+            <img src="https://randomuser.me/api/portraits/med/men/${thumb}.jpg" alt="user">
             <span class="user-name">${name}</span>
         </div>
     `;
@@ -159,3 +189,8 @@ function print(name, msg, side, state, time){
     scrollToBottom(content);
 }
 
+//참가자명단 상단에 표시
+const userList = document.querySelector('.user-name');
+function displayList(name){
+    userList.textContent = name;
+}

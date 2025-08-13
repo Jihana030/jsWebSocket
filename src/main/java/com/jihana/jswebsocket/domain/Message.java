@@ -24,9 +24,13 @@ public class Message {
     @Setter
     private String regdate;
 
+    @Getter
+    @Setter
+    private int thumb;
+
     @Override
     public String toString() {
         return "Message [code=" + code + ", sender=" + sender + ", receiver=" + receiver + ", content=" + content
-                + ", regdate=" + regdate + "]";
+                + ", regdate=" + regdate + ", thumb=" + thumb + "]";
     }
 }

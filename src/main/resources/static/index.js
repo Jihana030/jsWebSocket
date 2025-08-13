@@ -25,3 +25,10 @@ connectBtn.addEventListener('click', e=>{
         // });
     }
 });
+
+let userName = document.querySelector('#user-name');
+userName.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+        connectBtn.click();
+    }
+})
