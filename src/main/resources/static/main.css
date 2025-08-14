@@ -162,6 +162,7 @@ span.material-symbols-rounded {
                         }
                         span {
                             color: var(--black);
+                            align-self: flex-end;
                         }
                     }
                 }

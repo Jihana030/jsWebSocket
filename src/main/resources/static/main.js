@@ -14,6 +14,7 @@ let name;
 let ws;
 const url = 'ws://localhost:8080/chatserver.do';
 let participants = [];
+let disConnectUser = false;
 
 // userName 받기
 document.addEventListener('DOMContentLoaded', function(){
@@ -85,18 +86,19 @@ function connectUser(name){
         let message = JSON.parse(e.data);
         if(message.code === '9'){
             alert(message.content);
+            disConnectUser = true;
             window.location.href = '/index.html';
             return;
         } else if(message.code === '0'){
             participants = JSON.parse(message.content);
-            displayList(participants.join());
+            displayList(participants);
         } else if(message.code === '1'){
             participants.push(message.sender);
-            displayList(participants.join());
+            displayList(participants);
             print('[system]', `${message.sender}님이 입장하셨습니다.`, message.sender === name ? 'me' : 'other', 'state', message.regdate, message.thumb)
         } else if (message.code === '2'){
             participants = participants.filter(participant => participant !== message.sender);
-            displayList(participants.join());
+            displayList(participants);
             print('[system]', `${message.sender}님이 퇴장하셨습니다.`, message.sender === name ? 'me' : 'other', 'state', message.regdate, message.thumb)
         } else if (message.code === '3'){
             print(message.sender, message.content, message.sender === name ? 'me' : 'other', 'msg', message.regdate, message.thumb)
@@ -106,7 +108,9 @@ function connectUser(name){
 
 // 퇴장 유저 서버에 전송
 window.onbeforeunload = () => {
-    disconnect(name);
+    if(!disConnectUser){
+        disconnect(name);
+    }
 }
 function disconnect(name){
     if(ws && ws.readyState === WebSocket.OPEN){
@@ -126,7 +130,7 @@ function disconnect(name){
 function print(name, msg, side, state, time, thumb){
     let user = `
         <div class="user-thumb">
-            <img src="https://randomuser.me/api/portraits/med/men/${thumb}.jpg" alt="user">
+            <img src="https://api.dicebear.com/9.x/thumbs/svg?seed=${name}" alt="user">
             <span class="user-name">${name}</span>
         </div>
     `;
@@ -191,6 +195,8 @@ function print(name, msg, side, state, time, thumb){
 
 //참가자명단 상단에 표시
 const userList = document.querySelector('.user-name');
+const userRate = document.querySelector('.user-id');
 function displayList(name){
-    userList.textContent = name;
+    userList.textContent = name.join();
+    userRate.textContent = `${name.length}명`;
 }
